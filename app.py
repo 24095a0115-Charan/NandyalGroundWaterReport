@@ -2,7 +2,7 @@ import os
 import json
 import io
 import pandas as pd
-import numpy as np
+# pyrefly: ignore [missing-import]
 from flask import Flask, render_template, jsonify, request, send_file
 
 from src.quantity_calculator import calculate_groundwater_quantity, calculate_storage_delta, get_cgwb_status_zone

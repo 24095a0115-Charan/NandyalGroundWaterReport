@@ -1,11 +1,10 @@
 import os
 import json
 import pandas as pd
-import numpy as np
 
 from src.data_loader import load_nandyal_gw_data
 from src.feature_engineering import create_time_series_features, prepare_train_test_data
-from src.models import GroundwaterMLSuite, train_sarimax, recursive_multi_step_forecast
+from src.models import GroundwaterMLSuite, recursive_multi_step_forecast
 from src.quantity_calculator import calculate_groundwater_quantity, calculate_storage_delta, get_cgwb_status_zone
 from src.water_quality import estimate_nandyal_water_quality, calculate_wqi
 from src.evaluate import evaluate_models_time_series_split
@@ -13,6 +12,7 @@ from src.evaluate import evaluate_models_time_series_split
 def run_groundwater_ml_pipeline():
     print("=========================================================")
     print("Starting Nandyal GroundWater Level ML Pipeline Execution...")
+    print("Models: Random Forest, SVM, Decision Tree & Ensemble")
     print("Extended Multi-Step Horizon Forecasting up to Dec 2030")
     print("=========================================================")
     
@@ -26,19 +26,16 @@ def run_groundwater_ml_pipeline():
     df_feat = create_time_series_features(df)
     X, y, feature_cols = prepare_train_test_data(df_feat)
     
-    # 3. Train Machine Learning Models (RF, SVM, DT, ANN, XGBoost, Ensemble)
+    # 3. Train Machine Learning Models (RF, SVM, DT, Ensemble)
     ml_suite = GroundwaterMLSuite()
     ml_suite.train_all_models(X, y, feature_cols)
     
-    # Train SARIMAX baseline
-    sarimax_res = train_sarimax(df['WaterLevel_mbgl'])
-    
     # 4. Evaluate Benchmark Metrics
-    benchmark_metrics = evaluate_models_time_series_split(df_feat, ml_suite, sarimax_res, test_months=10)
+    benchmark_metrics = evaluate_models_time_series_split(df_feat, ml_suite, test_months=10)
     
     # 5. Generate Extended 52-Month Future Multi-Step Forecast (2026-09 to 2030-12)
     FORECAST_HORIZON_MONTHS = 52
-    forecast_df = recursive_multi_step_forecast(df, ml_suite, sarimax_res, forecast_horizon=FORECAST_HORIZON_MONTHS)
+    forecast_df = recursive_multi_step_forecast(df, ml_suite, forecast_horizon=FORECAST_HORIZON_MONTHS)
     
     print(f"Generated {FORECAST_HORIZON_MONTHS}-month forecast from {forecast_df['Date'].min().strftime('%Y-%m')} to {forecast_df['Date'].max().strftime('%Y-%m')}.")
     
@@ -92,9 +89,6 @@ def run_groundwater_ml_pipeline():
             'RandomForest': float(row['RandomForest']),
             'SVM': float(row['SVM']),
             'DecisionTree': float(row['DecisionTree']),
-            'ANN': float(row['ANN']),
-            'XGBoost': float(row['XGBoost']),
-            'SARIMAX': float(row['SARIMAX']),
             'Ensemble': float(ens_lvl),
             'Upper_Bound': float(row['Upper_Bound']),
             'Lower_Bound': float(row['Lower_Bound']),
@@ -142,3 +136,4 @@ def run_groundwater_ml_pipeline():
 
 if __name__ == '__main__':
     run_groundwater_ml_pipeline()
+

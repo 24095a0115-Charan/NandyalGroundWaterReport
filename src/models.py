@@ -2,12 +2,9 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.tree import DecisionTreeRegressor
-from sklearn.neural_network import MLPRegressor
 from sklearn.svm import SVR
 from sklearn.preprocessing import StandardScaler
-from xgboost import XGBRegressor
-from statsmodels.tsa.statespace.sarimax import SARIMAX
-from sklearn.metrics import root_mean_squared_error, mean_absolute_error, r2_score
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -20,9 +17,9 @@ class GroundwaterMLSuite:
 
     def train_all_models(self, X_train, y_train, feature_cols):
         """
-        Trains the models specified in the Batch 18 Abstract:
+        Trains the Machine Learning models:
         Random Forest (RF), Support Vector Machine (SVM), Decision Tree (DT), 
-        Artificial Neural Network (ANN), XGBoost, and Weighted Ensemble.
+        and Weighted Ensemble.
         """
         self.feature_cols = list(feature_cols)
         
@@ -57,37 +54,6 @@ class GroundwaterMLSuite:
         dt.fit(X_train, y_train)
         self.models['DecisionTree'] = dt
         
-        # 4. Artificial Neural Network (ANN / MLPRegressor)
-        scaler_ann_X = StandardScaler()
-        scaler_ann_y = StandardScaler()
-        X_ann_scaled = scaler_ann_X.fit_transform(X_train)
-        y_ann_scaled = scaler_ann_y.fit_transform(y_train.values.reshape(-1, 1)).ravel()
-        
-        ann = MLPRegressor(
-            hidden_layer_sizes=(64, 32),
-            activation='relu',
-            max_iter=1000,
-            random_state=42,
-            early_stopping=True
-        )
-        ann.fit(X_ann_scaled, y_ann_scaled)
-        
-        self.scalers['ANN_X'] = scaler_ann_X
-        self.scalers['ANN_y'] = scaler_ann_y
-        self.models['ANN'] = ann
-
-        # 5. XGBoost Regressor
-        xgb = XGBRegressor(
-            n_estimators=100,
-            learning_rate=0.05,
-            max_depth=3,
-            subsample=0.8,
-            colsample_bytree=0.8,
-            random_state=42
-        )
-        xgb.fit(X_train, y_train)
-        self.models['XGBoost'] = xgb
-        
         self.is_trained = True
 
     def predict(self, model_name, X):
@@ -101,16 +67,12 @@ class GroundwaterMLSuite:
             X_scaled = self.scalers['SVM_X'].transform(X)
             y_pred_scaled = self.models['SVM'].predict(X_scaled)
             return self.scalers['SVM_y'].inverse_transform(y_pred_scaled.reshape(-1, 1)).ravel()
-        elif model_name == 'ANN':
-            X_scaled = self.scalers['ANN_X'].transform(X)
-            y_pred_scaled = self.models['ANN'].predict(X_scaled)
-            return self.scalers['ANN_y'].inverse_transform(y_pred_scaled.reshape(-1, 1)).ravel()
         else:
             return self.models[model_name].predict(X)
 
-    def predict_ensemble(self, X, weights={'RandomForest': 0.30, 'SVM': 0.25, 'ANN': 0.25, 'DecisionTree': 0.20}):
+    def predict_ensemble(self, X, weights={'RandomForest': 0.45, 'SVM': 0.35, 'DecisionTree': 0.20}):
         """
-        Calculates weighted ensemble prediction across RF, SVM, ANN, and Decision Tree.
+        Calculates weighted ensemble prediction across RF, SVM, and Decision Tree.
         """
         preds = np.zeros(len(X))
         for m_name, w in weights.items():
@@ -118,21 +80,10 @@ class GroundwaterMLSuite:
         return preds
 
 
-def train_sarimax(series, order=(1, 1, 1), seasonal_order=(1, 0, 0, 12)):
-    try:
-        model = SARIMAX(series, order=order, seasonal_order=seasonal_order, enforce_stationarity=False, enforce_invertibility=False)
-        res = model.fit(disp=False)
-        return res
-    except Exception:
-        model = SARIMAX(series, order=(1, 1, 0), enforce_stationarity=False)
-        res = model.fit(disp=False)
-        return res
-
-
-def recursive_multi_step_forecast(df_historical, ml_suite, sarimax_res, forecast_horizon=12, target_col='WaterLevel_mbgl'):
+def recursive_multi_step_forecast(df_historical, ml_suite, forecast_horizon=12, target_col='WaterLevel_mbgl'):
     """
     Generates multi-step future recursive predictions up to forecast_horizon months.
-    Updates RF, SVM, DT, ANN, XGBoost, and Ensemble predictions.
+    Updates RF, SVM, DT, and Ensemble predictions.
     """
     df_forecast = df_historical.copy()
     last_date = df_forecast.index[-1]
@@ -142,14 +93,9 @@ def recursive_multi_step_forecast(df_historical, ml_suite, sarimax_res, forecast
     rf_forecasts = []
     svm_forecasts = []
     dt_forecasts = []
-    ann_forecasts = []
-    xgb_forecasts = []
     ensemble_forecasts = []
     upper_bounds = []
     lower_bounds = []
-    
-    sarimax_preds = sarimax_res.forecast(steps=forecast_horizon)
-    sarimax_forecasts = list(sarimax_preds)
     
     working_series = df_historical[target_col].copy()
     
@@ -186,18 +132,14 @@ def recursive_multi_step_forecast(df_historical, ml_suite, sarimax_res, forecast
         pred_rf = float(ml_suite.predict('RandomForest', X_step)[0])
         pred_svm = float(ml_suite.predict('SVM', X_step)[0])
         pred_dt = float(ml_suite.predict('DecisionTree', X_step)[0])
-        pred_ann = float(ml_suite.predict('ANN', X_step)[0])
-        pred_xgb = float(ml_suite.predict('XGBoost', X_step)[0])
         pred_ens = float(ml_suite.predict_ensemble(X_step)[0])
         
-        preds_arr = [pred_rf, pred_svm, pred_dt, pred_ann]
+        preds_arr = [pred_rf, pred_svm, pred_dt]
         std_err = np.std(preds_arr) + 0.12 * (i + 1)**0.5
         
         rf_forecasts.append(pred_rf)
         svm_forecasts.append(pred_svm)
         dt_forecasts.append(pred_dt)
-        ann_forecasts.append(pred_ann)
-        xgb_forecasts.append(pred_xgb)
         ensemble_forecasts.append(pred_ens)
         upper_bounds.append(pred_ens + 1.96 * std_err)
         lower_bounds.append(max(1.0, pred_ens - 1.96 * std_err))
@@ -209,12 +151,10 @@ def recursive_multi_step_forecast(df_historical, ml_suite, sarimax_res, forecast
         'RandomForest': np.round(rf_forecasts, 4),
         'SVM': np.round(svm_forecasts, 4),
         'DecisionTree': np.round(dt_forecasts, 4),
-        'ANN': np.round(ann_forecasts, 4),
-        'XGBoost': np.round(xgb_forecasts, 4),
-        'SARIMAX': np.round(sarimax_forecasts, 4),
         'Ensemble': np.round(ensemble_forecasts, 4),
         'Upper_Bound': np.round(upper_bounds, 4),
         'Lower_Bound': np.round(lower_bounds, 4)
     })
     
     return forecast_df
+

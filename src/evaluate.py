@@ -20,9 +20,9 @@ def calculate_metrics(y_true, y_pred):
         'MAPE': round(mape, 2)
     }
 
-def evaluate_models_time_series_split(df_features, ml_suite, sarimax_res, target_col='WaterLevel_mbgl', test_months=10):
+def evaluate_models_time_series_split(df_features, ml_suite, target_col='WaterLevel_mbgl', test_months=10):
     """
-    Evaluates RF, SVM, DT, ANN, XGBoost, SARIMAX, and Ensemble models.
+    Evaluates RF, SVM, DT, and Ensemble models using time-series train/test split.
     """
     data = df_features.dropna().copy()
     
@@ -47,11 +47,5 @@ def evaluate_models_time_series_split(df_features, ml_suite, sarimax_res, target
     ens_preds = test_ml_suite.predict_ensemble(X_test)
     results['Ensemble'] = calculate_metrics(y_test, ens_preds)
     
-    try:
-        sarimax_train_res = sarimax_res.apply(y_train)
-        sarimax_preds = sarimax_train_res.forecast(steps=test_months)
-        results['SARIMAX'] = calculate_metrics(y_test, sarimax_preds)
-    except Exception:
-        results['SARIMAX'] = {'RMSE': 2.85, 'MAE': 2.35, 'R2': -1.60, 'MAPE': 30.87}
-
     return results
+

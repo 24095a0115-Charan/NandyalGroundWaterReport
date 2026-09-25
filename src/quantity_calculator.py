@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 import numpy as np
 
 # Nandyal District Parameters (Central Ground Water Board CGWB standard references)
