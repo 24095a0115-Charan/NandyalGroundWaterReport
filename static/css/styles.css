@@ -545,3 +545,110 @@ footer.app-footer {
   color: var(--text-muted);
   font-size: 0.85rem;
 }
+
+/* Rainfall-Groundwater Hydrogeology Showcase Panel */
+.rainfall-showcase-panel {
+  margin-top: 24px;
+}
+
+.rainfall-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+  margin-top: 16px;
+}
+
+.rainfall-card-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+body.light-mode .rainfall-card-item {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.rainfall-card-item:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary-cyan);
+}
+
+.rainfall-card-item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--primary-gradient);
+}
+
+.rf-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.rf-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(6, 182, 212, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: var(--primary-cyan);
+}
+
+.rf-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-main);
+}
+
+.rf-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+  font-size: 0.85rem;
+}
+
+body.light-mode .rf-stat-row {
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.06);
+}
+
+.rf-stat-row:last-child {
+  border-bottom: none;
+}
+
+.rf-stat-label {
+  color: var(--text-muted);
+}
+
+.rf-stat-val {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.rf-highlight {
+  color: var(--primary-cyan);
+  font-size: 1.05rem;
+}
+
+.rf-badge-pos {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--accent-emerald);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+

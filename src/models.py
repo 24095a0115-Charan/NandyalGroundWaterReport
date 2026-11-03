@@ -71,25 +71,34 @@ class GroundwaterMLSuite:
         else:
             return self.models[model_name].predict(X)
 
-    def predict_ensemble(self, X, weights={'RandomForest': 0.45, 'SVM': 0.35, 'DecisionTree': 0.20}):
+    def predict_ensemble(self, X, weights={'DecisionTree': 0.35, 'RandomForest': 0.35, 'SVM': 0.30}):
         """
-        Calculates weighted ensemble prediction across RF, SVM, and Decision Tree.
+        Calculates weighted ensemble prediction across Decision Tree, RF, and SVM.
         """
         preds = np.zeros(len(X))
         for m_name, w in weights.items():
-            preds += w * self.predict(m_name, X)
+            if m_name in self.models:
+                preds += w * self.predict(m_name, X)
         return preds
 
 
-def recursive_multi_step_forecast(df_historical, ml_suite, forecast_horizon=12, target_col='WaterLevel_mbgl'):
+def recursive_multi_step_forecast(df_historical, ml_suite, forecast_horizon=52, 
+                                  target_col='WaterLevel_mbgl', rainfall_climatology=None,
+                                  rainfall_multiplier=1.0):
     """
     Generates multi-step future recursive predictions up to forecast_horizon months.
-    Updates RF, SVM, DT, and Ensemble predictions.
+    Integrates future seasonal rainfall projections to capture hydrogeological recharge dynamics.
     """
-    df_forecast = df_historical.copy()
-    last_date = df_forecast.index[-1]
-    
+    last_date = df_historical.index[-1]
     future_dates = [last_date + pd.DateOffset(months=i) for i in range(1, forecast_horizon + 1)]
+    
+    # Default climatological rainfall if not supplied
+    if rainfall_climatology is None:
+        rainfall_climatology = {
+            1: 3.60, 2: 3.60, 3: 3.60, 4: 3.60,
+            5: 51.58, 6: 82.94, 7: 149.18, 8: 127.02,
+            9: 138.88, 10: 79.30, 11: 14.70, 12: 3.45
+        }
     
     rf_forecasts = []
     svm_forecasts = []
@@ -97,13 +106,23 @@ def recursive_multi_step_forecast(df_historical, ml_suite, forecast_horizon=12, 
     ensemble_forecasts = []
     upper_bounds = []
     lower_bounds = []
+    future_rainfalls = []
     
     working_series = df_historical[target_col].copy()
+    has_rain = 'Rainfall_mm' in df_historical.columns
+    working_rainfall = df_historical['Rainfall_mm'].copy() if has_rain else pd.Series(dtype=float)
     
     for i, date in enumerate(future_dates):
         month = date.month
         year = date.year
         quarter = date.quarter
+        
+        # Calculate expected rainfall for this future month
+        base_rain = rainfall_climatology.get(month, 20.0)
+        curr_rain = round(base_rain * rainfall_multiplier, 2)
+        future_rainfalls.append(curr_rain)
+        if has_rain:
+            working_rainfall.loc[date] = curr_rain
         
         feat_dict = {}
         feat_dict['Month'] = month
@@ -128,6 +147,12 @@ def recursive_multi_step_forecast(df_historical, ml_suite, forecast_horizon=12, 
         feat_dict['rolling_min_6'] = working_series.iloc[-6:].min()
         feat_dict['rolling_max_6'] = working_series.iloc[-6:].max()
         
+        # Hydro-meteorological rainfall features
+        if has_rain:
+            feat_dict['Rainfall_mm'] = curr_rain
+            feat_dict['Rainfall_lag_1'] = working_rainfall.iloc[-2] if len(working_rainfall) >= 2 else curr_rain
+            feat_dict['Rainfall_rolling_3'] = working_rainfall.iloc[-4:-1].mean() if len(working_rainfall) >= 4 else curr_rain
+        
         X_step = pd.DataFrame([feat_dict])[ml_suite.feature_cols]
         
         pred_rf = float(ml_suite.predict('RandomForest', X_step)[0])
@@ -135,8 +160,18 @@ def recursive_multi_step_forecast(df_historical, ml_suite, forecast_horizon=12, 
         pred_dt = float(ml_suite.predict('DecisionTree', X_step)[0])
         pred_ens = float(ml_suite.predict_ensemble(X_step)[0])
         
+        # Rainfall anomaly physical recharge shift:
+        # If rainfall increases (multiplier > 1.0), water table depth mbgl decreases (rises)
+        # If rainfall decreases (multiplier < 1.0), water table depth mbgl increases (drops)
+        if rainfall_multiplier != 1.0:
+            recharge_effect = (1.0 - rainfall_multiplier) * 0.45 * feat_dict['Is_Monsoon']
+            pred_rf = max(1.5, pred_rf + recharge_effect)
+            pred_svm = max(1.5, pred_svm + recharge_effect)
+            pred_dt = max(1.5, pred_dt + recharge_effect)
+            pred_ens = max(1.5, pred_ens + recharge_effect)
+        
         preds_arr = [pred_rf, pred_svm, pred_dt]
-        std_err = np.std(preds_arr) + 0.12 * (i + 1)**0.5
+        std_err = np.std(preds_arr) + 0.10 * (i + 1)**0.45
         
         rf_forecasts.append(pred_rf)
         svm_forecasts.append(pred_svm)
@@ -149,6 +184,7 @@ def recursive_multi_step_forecast(df_historical, ml_suite, forecast_horizon=12, 
 
     forecast_df = pd.DataFrame({
         'Date': future_dates,
+        'Rainfall_mm': np.round(future_rainfalls, 2),
         'RandomForest': np.round(rf_forecasts, 4),
         'SVM': np.round(svm_forecasts, 4),
         'DecisionTree': np.round(dt_forecasts, 4),
@@ -158,4 +194,3 @@ def recursive_multi_step_forecast(df_historical, ml_suite, forecast_horizon=12, 
     })
     
     return forecast_df
-

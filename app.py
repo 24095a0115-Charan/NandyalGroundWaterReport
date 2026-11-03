@@ -42,6 +42,11 @@ def api_data():
         'forecast': data['forecast']
     })
 
+@app.route('/api/rainfall-link', methods=['GET'])
+def api_rainfall_link():
+    data = get_processed_data()
+    return jsonify(data['summary'].get('rainfall_gw_link', {}))
+
 @app.route('/api/simulate', methods=['POST'])
 def api_simulate():
     req = request.get_json() or {}
@@ -56,13 +61,18 @@ def api_simulate():
     simulated_forecasts = []
     prev_level = data['historical'][-1]['water_level_mbgl']
     
-    monthly_recharge_effect = (rainfall_anomaly_pct / 100.0) * 0.15
+    # Direct physical recharge response:
+    # +10% rainfall anomaly injects extra recharge (water table rises, mbgl decreases)
+    # Higher extraction draws down water table
+    monthly_recharge_effect = (rainfall_anomaly_pct / 100.0) * 0.16
     monthly_extraction_effect = (extraction_factor - 1.0) * 0.20
     
     accumulated_shift = 0.0
     
     for idx, item in enumerate(base_forecasts):
         base_val = item.get(selected_model, item['Ensemble'])
+        base_rain = item.get('rainfall_mm', 0.0)
+        sim_rain = max(0.0, round(base_rain * (1.0 + rainfall_anomaly_pct / 100.0), 2))
         
         accumulated_shift += (monthly_extraction_effect - monthly_recharge_effect)
         sim_val = max(1.0, base_val + accumulated_shift)
@@ -80,6 +90,8 @@ def api_simulate():
             'month': item['month'],
             'simulated_water_level_mbgl': round(sim_val, 3),
             'baseline_water_level_mbgl': round(base_val, 3),
+            'simulated_rainfall_mm': sim_rain,
+            'baseline_rainfall_mm': base_rain,
             'quantity_mcm': vol_mcm,
             'storage_delta_mcm': delta_mcm,
             'status': status_info['status'],
@@ -117,6 +129,11 @@ def api_export():
         fc_df
     ], ignore_index=True)
     
+    # Flatten nested water_quality dictionary if present
+    if 'water_quality' in combined_df.columns:
+        wq_df = pd.json_normalize(combined_df['water_quality']).add_prefix('wq_')
+        combined_df = pd.concat([combined_df.drop(columns=['water_quality']), wq_df], axis=1)
+        
     output = io.BytesIO()
     combined_df.to_csv(output, index=False)
     output.seek(0)
@@ -124,7 +141,7 @@ def api_export():
     return send_file(
         output,
         mimetype='text/csv',
-        download_name='Nandyal_GroundWater_2022_2030_ML_Forecast.csv',
+        download_name='Nandyal_GroundWater_Rainwater_2022_2030_ML_Forecast.csv',
         as_attachment=True
     )
 

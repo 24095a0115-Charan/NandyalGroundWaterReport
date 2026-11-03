@@ -5,7 +5,8 @@ import numpy as np
 
 def create_time_series_features(df, target_col='WaterLevel_mbgl', lags=[1, 2, 3, 12]):
     """
-    Creates feature set for time-series Machine Learning models.
+    Creates feature set for time-series Machine Learning models including
+    temporal, cyclical, autoregressive lags, rolling statistics, and rainfall recharge metrics.
     """
     data = df.copy()
     
@@ -36,6 +37,12 @@ def create_time_series_features(df, target_col='WaterLevel_mbgl', lags=[1, 2, 3,
     data['rolling_std_6'] = data[target_col].shift(1).rolling(window=6).std()
     data['rolling_min_6'] = data[target_col].shift(1).rolling(window=6).min()
     data['rolling_max_6'] = data[target_col].shift(1).rolling(window=6).max()
+    
+    # Hydro-meteorological rainfall features
+    if 'Rainfall_mm' in df.columns:
+        data['Rainfall_mm'] = df['Rainfall_mm']
+        data['Rainfall_lag_1'] = df['Rainfall_mm'].shift(1)
+        data['Rainfall_rolling_3'] = df['Rainfall_mm'].shift(1).rolling(window=3).mean().fillna(df['Rainfall_mm'])
     
     return data
 

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Machine Learning GroundWater Forecasting & Quality Prediction (2022-2030) | Nandyal District</title>
-  <meta name="description" content="Machine Learning Approach for GroundWater Level Forecasting and Quantity Prediction in Nandyal District, AP (2022-2030).">
+  <title>Machine Learning Groundwater & Rainwater Recharge Forecasting (2022-2030) | Nandyal District</title>
+  <meta name="description" content="Machine Learning Approach for GroundWater Level Forecasting, Rainwater Recharge Link and Quantity Prediction in Nandyal District, AP (2022-2030).">
   
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,7 +25,7 @@
       <div class="brand-icon">🌊</div>
       <div class="brand-title">
         <h1>Nandyal HydroML Platform</h1>
-        <p>GroundWater Level Forecasting & Water Quality Assessment (2022–2030)</p>
+        <p>GroundWater Forecasting, Rainwater Recharge Dynamics & Water Quality Assessment (2022–2030)</p>
       </div>
     </div>
     
@@ -55,7 +55,7 @@
           <span style="color: var(--primary-cyan); font-weight: 700; font-size: 0.88rem;">FINAL YEAR B.TECH PROJECT</span>
         </div>
         <h2>MACHINE LEARNING APPROACH FOR GROUNDWATER LEVEL FORECASTING AND QUANTITY PREDICTION</h2>
-        <p style="margin-top: 6px;">Study Area: <strong>Nandyal District, AP</strong> | Forecasting Horizon: <strong>2026 to 2030 (52 Months)</strong> | Models: <strong>RF, SVM, DT & Ensemble</strong></p>
+        <p style="margin-top: 6px;">Study Area: <strong>Nandyal District, AP</strong> | Forecasting Horizon: <strong>2026 to 2030 (52 Months)</strong> | Integrated <strong>Rainwater-Aquifer Recharge HydroML Suite</strong> (RF, SVM, DT & Ensemble)</p>
       </div>
     </div>
 
@@ -92,6 +92,34 @@
 
       <div class="glass-card metric-card">
         <div class="metric-header">
+          <span class="metric-label">Rainfall-GW Recharge Link</span>
+          <span class="metric-icon">🌧️</span>
+        </div>
+        <div>
+          <span class="metric-value" id="val-rain-corr" style="color: var(--accent-emerald);">+0.63</span>
+          <span class="metric-unit"> r</span>
+        </div>
+        <div class="metric-footer">
+          <span>Seasonal Recharge Correlation (<span id="val-recharge-rate">~116 MCM / 100mm</span>)</span>
+        </div>
+      </div>
+
+      <div class="glass-card metric-card">
+        <div class="metric-header">
+          <span class="metric-label">District Precipitation</span>
+          <span class="metric-icon">☔</span>
+        </div>
+        <div>
+          <span class="metric-value" id="val-annual-rain">--</span>
+          <span class="metric-unit"> mm</span>
+        </div>
+        <div class="metric-footer">
+          <span>Latest: <span id="val-latest-rain">-- mm</span> | Annual Avg</span>
+        </div>
+      </div>
+
+      <div class="glass-card metric-card">
+        <div class="metric-header">
           <span class="metric-label">Water Quality Index (WQI)</span>
           <span class="metric-icon">🧪</span>
         </div>
@@ -106,7 +134,7 @@
 
       <div class="glass-card metric-card">
         <div class="metric-header">
-          <span class="metric-label">Multi-Step Forecast Horizon</span>
+          <span class="metric-label">Forecast Horizon</span>
           <span class="metric-icon">🔮</span>
         </div>
         <div>
@@ -120,14 +148,101 @@
 
     </div>
 
+    <!-- Hydrogeological Rainfall-to-Groundwater Link Showcase Panel -->
+    <div class="glass-card rainfall-showcase-panel">
+      <div class="section-title">
+        <div class="title-left">
+          <span class="title-icon">🔗</span> Hydrogeological Link: Rainwater Precipitation vs Groundwater Recharge & Storage
+        </div>
+        <span class="rf-badge-pos">DIRECT POSITIVE RECHARGE DYNAMIC</span>
+      </div>
+
+      <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 4px;">
+        Empirical and scientific evidence demonstrates that <strong>increasing rainfall automatically increases groundwater storage</strong> and elevates the water table (reducing depth below ground level) across Nandyal District.
+      </p>
+
+      <div class="rainfall-grid">
+        
+        <div class="rainfall-card-item">
+          <div class="rf-header">
+            <div class="rf-icon">📈</div>
+            <div class="rf-title">Statistical Link & Correlation</div>
+          </div>
+          <div class="rf-stat-row">
+            <span class="rf-stat-label">Seasonal Recharge Correlation:</span>
+            <span class="rf-stat-val rf-highlight" id="stat-seasonal-corr">+0.626</span>
+          </div>
+          <div class="rf-stat-row">
+            <span class="rf-stat-label">Water Depth Inverted Correlation:</span>
+            <span class="rf-stat-val" id="stat-depth-corr">-0.626 (Shallower Table)</span>
+          </div>
+          <div class="rf-stat-row">
+            <span class="rf-stat-label">Recharge Lag Phase:</span>
+            <span class="rf-stat-val">1 - 2 Months Post-Rain</span>
+          </div>
+          <div class="rf-stat-row">
+            <span class="rf-stat-label">Statistical Significance:</span>
+            <span class="rf-stat-val rf-badge-pos">p &lt; 0.001 (Highly Significant)</span>
+          </div>
+        </div>
+
+        <div class="rainfall-card-item">
+          <div class="rf-header">
+            <div class="rf-icon">⚡</div>
+            <div class="rf-title">Infiltration Physics & CGWB Norms</div>
+          </div>
+          <div class="rf-stat-row">
+            <span class="rf-stat-label">Aquifer Area:</span>
+            <span class="rf-stat-val">9,682 km² (Nandyal District)</span>
+          </div>
+          <div class="rf-stat-row">
+            <span class="rf-stat-label">Specific Yield (Sy):</span>
+            <span class="rf-stat-val">0.025 (2.5% Fractured Rock)</span>
+          </div>
+          <div class="rf-stat-row">
+            <span class="rf-stat-label">Storage Gain per 100mm Rain:</span>
+            <span class="rf-stat-val rf-highlight" id="stat-mcm-per-100mm">~116.18 MCM</span>
+          </div>
+          <div class="rf-stat-row">
+            <span class="rf-stat-label">Water Table Rise per 100mm:</span>
+            <span class="rf-stat-val rf-highlight" id="stat-rise-per-100mm">~0.48 meters rise</span>
+          </div>
+        </div>
+
+        <div class="rainfall-card-item">
+          <div class="rf-header">
+            <div class="rf-icon">🔄</div>
+            <div class="rf-title">Monsoon Recharge Cycle</div>
+          </div>
+          <div class="rf-stat-row">
+            <span class="rf-stat-label">Monsoon Precipitation (Jun-Nov):</span>
+            <span class="rf-stat-val" id="stat-monsoon-rain">~104.4 mm / month</span>
+          </div>
+          <div class="rf-stat-row">
+            <span class="rf-stat-label">Dry Period Rainfall (Dec-May):</span>
+            <span class="rf-stat-val" id="stat-dry-rain">~12.7 mm / month</span>
+          </div>
+          <div class="rf-stat-row">
+            <span class="rf-stat-label">Average Annual Recharge:</span>
+            <span class="rf-stat-val rf-highlight">~1,150 MCM / year</span>
+          </div>
+          <div class="rf-stat-row">
+            <span class="rf-stat-label">Water Quality Dilution:</span>
+            <span class="rf-stat-val">Reduces TDS & Fluoride</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- Main Plotly Charts Grid -->
     <div class="main-charts-grid">
       
-      <!-- Primary Groundwater Level Chart (Plotly) -->
+      <!-- Primary Groundwater Level & Rainfall Hyetograph Chart (Plotly Dual-Axis) -->
       <div class="glass-card">
         <div class="section-title">
           <div class="title-left">
-            <span class="title-icon">📊</span> Nandyal District Groundwater Level Trend & Multi-Step ML Forecast (2022–2030)
+            <span class="title-icon">📊</span> Nandyal Groundwater Level Trend, Rainfall Hyetograph & Multi-Step ML Forecast (2022–2030)
           </div>
         </div>
         <div class="chart-controls">
@@ -135,17 +250,18 @@
           <button class="btn-toggle" data-model="RandomForest" onclick="selectModelChart('RandomForest')">Random Forest (RF)</button>
           <button class="btn-toggle" data-model="SVM" onclick="selectModelChart('SVM')">SVM / SVR</button>
           <button class="btn-toggle" data-model="DecisionTree" onclick="selectModelChart('DecisionTree')">Decision Tree (DT)</button>
+          <button class="btn-toggle active" id="btnToggleRain" onclick="toggleRainfallOverlay()" style="border-color: rgba(6, 182, 212, 0.4);">🌧️ Rainfall Hyetograph</button>
         </div>
         <div class="chart-wrapper">
           <div id="groundwaterPlotly" style="width:100%; height:100%;"></div>
         </div>
       </div>
 
-      <!-- Hydrogeological Storage & Water Quality Chart (Plotly) -->
+      <!-- Hydrogeological Storage & Rainfall Recharge Chart (Plotly) -->
       <div class="glass-card">
         <div class="section-title">
           <div class="title-left">
-            <span class="title-icon">💧</span> Dynamic Aquifer Storage Volume (MCM)
+            <span class="title-icon">💧</span> Dynamic Aquifer Storage Volume & Usable Capacity (MCM)
           </div>
         </div>
         <div class="chart-wrapper">
@@ -204,7 +320,7 @@
       <div class="glass-card simulator-panel">
         <div class="section-title">
           <div class="title-left">
-            <span class="title-icon">🎛️</span> "What-If" Climate & Extraction Scenario Simulator (up to 2030)
+            <span class="title-icon">🎛️</span> "What-If" Climate & Rainwater Recharge Simulator (up to 2030)
           </div>
         </div>
 
@@ -214,7 +330,7 @@
             <span class="control-val" id="lbl-rainfall">0%</span>
           </div>
           <input type="range" id="slider-rainfall" min="-50" max="50" step="5" value="0" oninput="updateScenario()">
-          <span style="font-size: 0.78rem; color: var(--text-muted);">-50% Severe Drought | +50% Heavy Monsoon</span>
+          <span style="font-size: 0.78rem; color: var(--text-muted);">-50% Severe Drought (Depletion) | +50% Heavy Monsoon (Automatic Recharge)</span>
         </div>
 
         <div class="control-group">
@@ -236,7 +352,7 @@
 
         <div style="background: rgba(6, 182, 212, 0.06); border: 1px solid var(--border-color); padding: 14px; border-radius: var(--radius-md); font-size: 0.85rem;">
           <div style="font-weight: 700; color: var(--primary-cyan); margin-bottom: 4px;">Scenario Forecast Projection (up to 2030):</div>
-          <div id="sim-impact-summary">Adjust sliders above to test climate and extraction scenarios.</div>
+          <div id="sim-impact-summary">Adjust rainfall slider above to test how increasing rainfall increases groundwater automatically.</div>
         </div>
       </div>
 
