@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initDayNightMode();
   await fetchDashboardData();
   await fetchBenchmarkData();
-  
+
   window.addEventListener('resize', () => {
     if (document.getElementById('groundwaterPlotly')) Plotly.Plots.resize('groundwaterPlotly');
     if (document.getElementById('quantityPlotly')) Plotly.Plots.resize('quantityPlotly');
@@ -38,7 +38,7 @@ function toggleDayNightMode() {
   const isLight = document.body.classList.toggle('light-mode');
   localStorage.setItem('hydro_theme', isLight ? 'light' : 'dark');
   updateDNButtonUI(isLight);
-  
+
   if (globalData) {
     renderGroundwaterPlotly(currentSelectedModel);
     renderQuantityPlotly();
@@ -59,18 +59,18 @@ async function fetchDashboardData() {
   try {
     const res = await fetch('/api/data');
     globalData = await res.json();
-    
+
     populateMetricCards(globalData.summary, globalData.historical ? globalData.historical[globalData.historical.length - 1] : null);
   } catch (err) {
     console.error('Error fetching metric summary:', err);
   }
-  
+
   try {
     renderGroundwaterPlotly(currentSelectedModel);
   } catch (err) {
     console.error('Error rendering groundwater chart:', err);
   }
-  
+
   try {
     renderQuantityPlotly();
   } catch (err) {
@@ -82,19 +82,19 @@ async function fetchBenchmarkData() {
   try {
     const res = await fetch('/api/benchmark');
     const metrics = await res.json();
-    
+
     const tbody = document.getElementById('benchmarkTbody');
     if (!tbody) return;
     tbody.innerHTML = '';
-    
+
     for (const [model, stats] of Object.entries(metrics)) {
       const tr = document.createElement('tr');
       if (model === 'Ensemble') {
         tr.classList.add('highlight-row');
       }
-      
+
       const isR2Good = stats.R2 >= 0.40;
-      
+
       tr.innerHTML = `
         <td><strong>${model} ${model === 'Ensemble' ? '⭐ (Optimal)' : ''}</strong></td>
         <td>${stats.RMSE.toFixed(3)}</td>
@@ -111,16 +111,16 @@ async function fetchBenchmarkData() {
 
 function populateMetricCards(summary, latestRecord) {
   if (!summary) return;
-  
+
   safeSetText('val-water-level', summary.latest_water_level_mbgl);
   safeSetText('val-last-date', summary.latest_reading_date);
   safeSetText('val-storage-mcm', summary.latest_quantity_mcm);
-  
+
   if (summary.latest_wqi) {
     safeSetText('val-wqi-score', summary.latest_wqi);
     safeSetText('val-wqi-status', summary.latest_wqi_status);
   }
-  
+
   // Rainfall & Recharge Link Metrics
   if (summary.rainfall_gw_link) {
     const link = summary.rainfall_gw_link;
@@ -129,7 +129,7 @@ function populateMetricCards(summary, latestRecord) {
     safeSetText('val-annual-rain', link.annual_average_rainfall_mm);
     safeSetText('val-latest-rain', `${summary.latest_rainfall_mm || 0} mm`);
     safeSetText('val-recharge-rate', `~${link.recharge_mcm_per_100mm} MCM / 100mm`);
-    
+
     safeSetText('stat-seasonal-corr', `${corrSign}${link.seasonal_recharge_correlation}`);
     safeSetText('stat-depth-corr', `${link.depth_inverse_correlation} (Shallower depth = Higher water table)`);
     safeSetText('stat-mcm-per-100mm', `~${link.recharge_mcm_per_100mm} MCM`);
@@ -137,7 +137,7 @@ function populateMetricCards(summary, latestRecord) {
     safeSetText('stat-monsoon-rain', `~${link.monsoon_monthly_avg_mm} mm / mo`);
     safeSetText('stat-dry-rain', `~${link.non_monsoon_monthly_avg_mm} mm / mo`);
   }
-  
+
   if (latestRecord && latestRecord.water_quality) {
     const wq = latestRecord.water_quality;
     safeSetText('wq-ph', wq.pH);
@@ -169,18 +169,18 @@ function toggleRainfallOverlay() {
 
 function renderGroundwaterPlotly(modelName = 'Ensemble') {
   if (!globalData || !document.getElementById('groundwaterPlotly')) return;
-  
+
   const theme = getPlotlyTheme();
   const histDates = globalData.historical.map(h => h.month);
   const histValues = globalData.historical.map(h => h.water_level_mbgl);
   const histRainfall = globalData.historical.map(h => h.rainfall_mm !== undefined ? h.rainfall_mm : 0);
-  
+
   const fcDates = globalData.forecast.map(f => f.month);
   const fcValues = globalData.forecast.map(f => f[modelName] !== undefined ? f[modelName] : f.Ensemble);
   const fcRainfall = globalData.forecast.map(f => f.rainfall_mm !== undefined ? f.rainfall_mm : 0);
   const upperBounds = globalData.forecast.map(f => f.Upper_Bound || (f[modelName] + 0.8));
   const lowerBounds = globalData.forecast.map(f => f.Lower_Bound || Math.max(1.0, f[modelName] - 0.8));
-  
+
   const traces = [];
 
   // 1. Rainfall Hyetograph Bar Trace (Dual-Axis yaxis2)
@@ -256,11 +256,11 @@ function renderGroundwaterPlotly(modelName = 'Ensemble') {
     margin: { l: 55, r: 55, t: 25, b: 40 },
     legend: { orientation: 'h', y: 1.15, x: 0 },
     xaxis: { gridcolor: theme.gridColor, zerolinecolor: theme.gridColor, nticks: 12 },
-    yaxis: { 
-      autorange: 'reversed', 
-      title: 'Water Level Depth (m bgl) [Inverted: Higher = Shallower/Fuller]', 
-      gridcolor: theme.gridColor, 
-      zerolinecolor: theme.gridColor 
+    yaxis: {
+      autorange: 'reversed',
+      title: 'Water Level Depth (m bgl) [Inverted: Higher = Shallower/Fuller]',
+      gridcolor: theme.gridColor,
+      zerolinecolor: theme.gridColor
     },
     yaxis2: {
       title: 'Monthly Rainfall (mm)',
@@ -281,15 +281,15 @@ function renderGroundwaterPlotly(modelName = 'Ensemble') {
 /* Dynamic Aquifer Storage Volume (MCM) Chart - Complete 2022-2030 Timeline */
 function renderQuantityPlotly() {
   if (!globalData || !document.getElementById('quantityPlotly')) return;
-  
+
   const theme = getPlotlyTheme();
-  
+
   const histDates = globalData.historical.map(h => h.month);
   const histQuantities = globalData.historical.map(h => h.quantity_mcm);
-  
+
   const fcDates = globalData.forecast.map(f => f.month);
   const fcQuantities = globalData.forecast.map(f => f.quantity_mcm);
-  
+
   const traceHistQty = {
     x: histDates,
     y: histQuantities,
@@ -346,17 +346,17 @@ async function updateScenario() {
   const rainfallEl = document.getElementById('slider-rainfall');
   const extractionEl = document.getElementById('slider-extraction');
   const horizonEl = document.getElementById('slider-horizon');
-  
+
   if (!rainfallEl || !extractionEl || !horizonEl) return;
 
   const rainfall = parseFloat(rainfallEl.value);
   const extraction = parseFloat(extractionEl.value);
   const horizon = parseInt(horizonEl.value);
-  
+
   safeSetText('lbl-rainfall', `${rainfall > 0 ? '+' : ''}${rainfall}%`);
   safeSetText('lbl-extraction', `${extraction}x`);
   safeSetText('lbl-horizon', `${horizon} M`);
-  
+
   try {
     const res = await fetch('/api/simulate', {
       method: 'POST',
@@ -368,22 +368,22 @@ async function updateScenario() {
         selected_model: currentSelectedModel
       })
     });
-    
+
     const result = await res.json();
     if (result.status === 'success') {
       const simData = result.simulated_forecast;
       const lastSim = simData[simData.length - 1];
       const baseFinal = simData[simData.length - 1].baseline_water_level_mbgl;
       const simDeltaM = (baseFinal - lastSim.simulated_water_level_mbgl).toFixed(2);
-      
+
       const summaryEl = document.getElementById('sim-impact-summary');
       if (summaryEl) {
         const rechargeMsg = rainfall > 0
           ? `<span style="color: var(--accent-emerald); font-weight:700;">+${rainfall}% Extra Rain recharges aquifer (+${Math.abs(simDeltaM)}m higher water table)</span>`
           : rainfall < 0
-          ? `<span style="color: var(--accent-rose); font-weight:700;">${rainfall}% Rainfall Deficit depletes aquifer (${Math.abs(simDeltaM)}m deeper water table)</span>`
-          : `<span>Normal rainfall conditions</span>`;
-          
+            ? `<span style="color: var(--accent-rose); font-weight:700;">${rainfall}% Rainfall Deficit depletes aquifer (${Math.abs(simDeltaM)}m deeper water table)</span>`
+            : `<span>Normal rainfall conditions</span>`;
+
         summaryEl.innerHTML = `
           Projected at <strong>${lastSim.month}</strong>: 
           <span style="color: ${lastSim.color}; font-weight:700;">${lastSim.simulated_water_level_mbgl} m bgl</span> 
@@ -391,11 +391,11 @@ async function updateScenario() {
           <strong>Hydro Dynamic Impact:</strong> ${rechargeMsg}.
         `;
       }
-      
+
       if (globalData) {
         const histDates = globalData.historical.map(h => h.month);
         const histValues = globalData.historical.map(h => h.water_level_mbgl);
-        
+
         const simTrace = {
           x: [histDates[histDates.length - 1], ...simData.map(s => s.month)],
           y: [histValues[histValues.length - 1], ...simData.map(s => s.simulated_water_level_mbgl)],
@@ -406,7 +406,7 @@ async function updateScenario() {
           marker: { size: 5, color: '#f43f5e' },
           hovertemplate: '%{x}<br>Simulated Level: <b>%{y} m bgl</b><extra></extra>'
         };
-        
+
         const graphDiv = document.getElementById('groundwaterPlotly');
         if (graphDiv && graphDiv.data) {
           const currentTraces = graphDiv.data.filter(t => !t.name || !t.name.includes('Simulated Scenario'));
